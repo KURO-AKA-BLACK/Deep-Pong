@@ -88,22 +88,23 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
                 if (comparison.all()):
                     index = j
                     break
-                    
-            t_next_state = replay_buffer.buffer[index][3]                    
-            t_reward = replay_buffer.buffer[index][2]
-            target_value = target_value + (gamma ** cnt) * replay_buffer.buffer[index][2]
+            temp = replay_buffer.buffer[index]        
+            t_next_state = temp[3]                    
+            t_reward = temp[2]
+            target_value = target_value + (gamma ** cnt) * temp[2]
             cnt = cnt + 1
             for k in range(len(path_queue)):
                 cmpr = path_queue[k] == t_next_state
                 if (cmpr.all()):
                     loss.append(-1)
                     t_reward = -1
+                    break
             path_queue.append(t_next_state)
             
             
         #print(target_value)
         #print(target_model.size)
-        #print((target_model.forward(state[i])))
+        #print(((target_model.forward(state[i]))[0][b_action[i]] - target_value)**2)
         loss.append(((target_model.forward(state[i]))[0][b_action[i]] - target_value)**2)
     
     for i in range(len(loss)):
