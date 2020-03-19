@@ -74,13 +74,14 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     total_loss = 0.0
     loss = []
     for i in range(batch_size):
-        print("hello")
+        #print("hello")
         target_value = float(reward[i])
-        gamma = 0.8
         cnt = 1
         t_next_state = b_next_state[i]
+        t_reward = b_reward[i]
         t_done = bool(done[i])
-        while(t_done != True):
+        path_queue = [b_state[i]]
+        while((t_reward != 1) and (t_reward != -1)):
             index = -1
             for j in range(len(replay_buffer)):
                 comparison = replay_buffer.buffer[j][0] == t_next_state
@@ -88,12 +89,22 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
                     index = j
                     break
                     
-            t_next_state = replay_buffer.buffer[index][3]
-            t_done = replay_buffer.buffer[index][4]
+            t_next_state = replay_buffer.buffer[index][3]                    
+            t_reward = replay_buffer.buffer[index][2]
             target_value = target_value + (gamma ** cnt) * replay_buffer.buffer[index][2]
             cnt = cnt + 1
+            for k in range(len(path_queue)):
+                cmpr = path_queue[k] == t_next_state
+                if (cmpr.all()):
+                    loss.append(-1)
+                    t_reward = -1
+            path_queue.append(t_next_state)
             
-        loss.append((self.forward(b_state)[b_action] - target_value)**2)
+            
+        #print(target_value)
+        #print(target_model.size)
+        #print((target_model.forward(state[i])))
+        loss.append(((target_model.forward(state[i]))[0][b_action[i]] - target_value)**2)
     
     for i in range(len(loss)):
         total_loss = total_loss + loss[i]

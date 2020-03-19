@@ -19,7 +19,7 @@ env = wrap_pytorch(env)
 
 num_frames = 1000000
 batch_size = 32
-gamma = 0.99
+gamma = 0.8
 record_idx = 10000
 
 replay_initial = 10000
@@ -81,5 +81,8 @@ for frame_idx in range(1, num_frames + 1):
     if frame_idx % 50000 == 0:
         target_model.copy_from(model)
 
+    if frame_idx % 100000 == 0:
+        torch.save(model.state_dict(), "save.pth")
 
-
+np.save('loss', losses)
+np.save('reward', all_rewards)
