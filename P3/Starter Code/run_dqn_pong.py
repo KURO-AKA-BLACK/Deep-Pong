@@ -17,7 +17,7 @@ env = make_atari(env_id)
 env = wrap_deepmind(env)
 env = wrap_pytorch(env)
 
-num_frames = 1000000
+num_frames = 600000
 batch_size = 32
 gamma = 0.8
 record_idx = 10000
@@ -48,7 +48,7 @@ episode_reward = 0
 state = env.reset()
 
 for frame_idx in range(1, num_frames + 1):
-    #print("Frame: " + str(frame_idx))
+    print("Frame: " + str(frame_idx))
 
     epsilon = epsilon_by_frame(frame_idx)
     action = model.act(state, epsilon)
@@ -70,6 +70,7 @@ for frame_idx in range(1, num_frames + 1):
         loss.backward()
         optimizer.step()
         losses.append((frame_idx, loss.data.cpu().numpy()))
+        #print(frame_idx)
 
     if frame_idx % 10000 == 0 and len(replay_buffer) <= replay_initial:
         print('#Frame: %d, preparing replay buffer' % frame_idx)
