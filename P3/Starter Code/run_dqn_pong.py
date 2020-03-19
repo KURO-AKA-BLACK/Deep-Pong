@@ -82,7 +82,7 @@ for frame_idx in range(1, num_frames + 1):
     if frame_idx % 50000 == 0:
         target_model.copy_from(model)
 
-    if frame_idx % 100000 == 0:
+    if frame_idx % 1000 == 0 and frame_idx > 10000:
         torch.save(model.state_dict(), "save.pth")
 
 np.save('loss', losses)
