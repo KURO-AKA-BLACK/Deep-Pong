@@ -95,8 +95,6 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     over = 0
     count = 0
     while (not over):
-        count = count + 1
-        print(count)
         for i in range(len(replay_buffer)):             
             for j in range(len(state_holder)):
                 if (state_status[j] == -1):
