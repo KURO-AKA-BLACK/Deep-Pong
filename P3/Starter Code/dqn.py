@@ -1,4 +1,5 @@
 from collections import deque
+import cProfile
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -73,6 +74,15 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     # implement the loss function here
     total_loss = 0.0
     loss = []
+    #pr = cProfile.Profile()
+    #pr.enable()
+    #replay_buffer_list = []
+    #for i in range(len(replay_buffer)):
+    #    print(replay_buffer.buffer[i][0].shape)
+    #    break
+    #    replay_buffer_list.append(replay_buffer.buffer[i][0])
+    #replay_buffer_list = torch.FloatTensor(replay_buffer_list)
+
     for i in range(batch_size):
         #print("hello")
         target_value = float(reward[i])
@@ -82,10 +92,10 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
         t_done = bool(done[i])
         path_queue = [b_state[i]]
         while((t_reward != 1) and (t_reward != -1)):
-            index = -1
+            index = -1#replay_buffer_list.index(torch.FloatTensor(t_next_state))
             for j in range(len(replay_buffer)):
-                comparison = replay_buffer.buffer[j][0] == t_next_state
-                if (comparison.all()):
+                #comparison = replay_buffer.buffer[j][0] == t_next_state
+                if (not((replay_buffer.buffer[j][0] != t_next_state).any())):
                     index = j
                     break
             temp = replay_buffer.buffer[index]        
@@ -106,7 +116,8 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
         #print(target_model.size)
         #print(((target_model.forward(state[i]))[0][b_action[i]] - target_value)**2)
         loss.append(((target_model.forward(state[i]))[0][b_action[i]] - target_value)**2)
-    
+    #pr.disable()
+    #pr.print_stats(sort='time')
     for i in range(len(loss)):
         total_loss = total_loss + loss[i]
     
