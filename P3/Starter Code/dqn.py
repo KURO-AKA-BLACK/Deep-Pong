@@ -72,16 +72,84 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
     # implement the loss function here
+    state_holder = b_next_state
+    state_check = []
+    state_status = []
+    target_value = b_reward
+    path_queue = []
+    cnt = []
+    for i in range(batch_size):
+        cnt.append(1)
+        state_status.append(1)
+        state_check.append(-1)
+        path_queue.append([])
+    for i in range(batch_size):
+        path_queue[i].append(np.array(b_state[i]))
+    for i in range(batch_size):
+        path_queue[i].append(np.array(b_next_state[i]))
+    #state_check = np.array(state_check)
+    #print(type(replay_buffer.buffer[i][0]))
+    #print(type(path_queue[0][0]))
+    state_holder = np.array(state_holder)
+    #print(state_check)
+    over = 0
+    count = 0
+    while (not over):
+        count = count + 1
+        print(count)
+        for i in range(len(replay_buffer)):             
+            for j in range(len(state_holder)):
+                if (state_status[j] == -1):
+                    continue
+                if (not((state_holder[j] != replay_buffer.buffer[i][0]).any())):
+                    path_queue[j].append(replay_buffer.buffer[i][3])
+                    target_value[j] = target_value[j] + (gamma ** cnt[j]) * replay_buffer.buffer[i][2]
+                    cnt[j] = cnt[j] + 1
+                    if (replay_buffer.buffer[i][2] == 1 or replay_buffer.buffer[i][2] == -1):
+                        state_status[j] = -1
+                        if (state_status == state_check):
+                            over = 1
+                            break
+                    else:
+                        state_holder[j] = replay_buffer.buffer[i][3]
+                        for x in range(len(path_queue[j])):
+                            if ((path_queue[j][x] == replay_buffer.buffer[i][3]).all()):
+                                target_value[j] = -1
+                                state_status[j] = -1
+                                if (state_status == state_check):
+                                    over = 1
+                                break
+                        #path_queue[j].append(replay_buffer.buffer[i][3])
+                else:
+                    if (count > 10):
+                        target_value[j] = -1
+                        state_status[j] = -1
+                        over = 1
+            if (over):
+                break
+                
     total_loss = 0.0
     loss = []
-    #pr = cProfile.Profile()
-    #pr.enable()
-    #replay_buffer_list = []
-    #for i in range(len(replay_buffer)):
+    for i in range(batch_size):
+        loss.append(((target_model.forward(state[i]))[0][b_action[i]] - target_value[i])**2)
+    for i in range(len(loss)):
+        total_loss = total_loss + loss[i]
+    
+    
+    print(total_loss/batch_size)
+    
+    
+    '''
+    total_loss = 0.0
+    loss = []
+    pr = cProfile.Profile()
+    pr.enable()
+    replay_buffer_list = []
+    for i in range(len(replay_buffer)):
     #    print(replay_buffer.buffer[i][0].shape)
     #    break
-    #    replay_buffer_list.append(replay_buffer.buffer[i][0])
-    #replay_buffer_list = torch.FloatTensor(replay_buffer_list)
+        replay_buffer_list.append(replay_buffer.buffer[i][0])
+    replay_buffer_list = np.array(replay_buffer_list)
 
     for i in range(batch_size):
         #print("hello")
@@ -93,9 +161,12 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
         path_queue = [b_state[i]]
         while((t_reward != 1) and (t_reward != -1)):
             index = -1#replay_buffer_list.index(torch.FloatTensor(t_next_state))
-            for j in range(len(replay_buffer)):
+            t_next_state = np.array(t_next_state)
+            #index = np.where(replay_buffer_list == t_next_state)[0]
+            #print(index)
+            for j in range(len(replay_buffer_list)):
                 #comparison = replay_buffer.buffer[j][0] == t_next_state
-                if (not((replay_buffer.buffer[j][0] != t_next_state).any())):
+                if (not((replay_buffer_list[j] != t_next_state).any())):
                     index = j
                     break
             temp = replay_buffer.buffer[index]        
@@ -104,8 +175,8 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
             target_value = target_value + (gamma ** cnt) * temp[2]
             cnt = cnt + 1
             for k in range(len(path_queue)):
-                cmpr = path_queue[k] == t_next_state
-                if (cmpr.all()):
+                #cmpr = path_queue[k] == t_next_state
+                if (not((path_queue[k] != t_next_state).any())):
                     loss.append(-1)
                     t_reward = -1
                     break
@@ -116,11 +187,11 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
         #print(target_model.size)
         #print(((target_model.forward(state[i]))[0][b_action[i]] - target_value)**2)
         loss.append(((target_model.forward(state[i]))[0][b_action[i]] - target_value)**2)
-    #pr.disable()
-    #pr.print_stats(sort='time')
+    pr.disable()
+    pr.print_stats(sort='time')
     for i in range(len(loss)):
         total_loss = total_loss + loss[i]
-    
+    '''
     return total_loss/batch_size
 
 
@@ -137,7 +208,6 @@ class ReplayBuffer(object):
     def sample(self, batch_size):
         # TODO: Randomly sampling data with specific batch size from the buffer
         state, action, reward, next_state, done = [], [], [], [], []
-
         samples = random.sample(self.buffer, batch_size)
         for i in range(batch_size):
             state.append(samples[i][0])
