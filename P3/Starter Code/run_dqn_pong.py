@@ -1,5 +1,6 @@
 from Wrapper.layers import *
 from Wrapper.wrappers import make_atari, wrap_deepmind, wrap_pytorch
+import cProfile
 import math, random
 import gym
 import numpy as np
@@ -17,7 +18,7 @@ env = make_atari(env_id)
 env = wrap_deepmind(env)
 env = wrap_pytorch(env)
 
-num_frames = 44000
+num_frames = 1000000
 batch_size = 32
 gamma = 0.8
 record_idx = 10000
@@ -65,6 +66,7 @@ for frame_idx in range(1, num_frames + 1):
         episode_reward = 0
 
     if len(replay_buffer) > replay_initial:
+        #cProfile.run("loss = compute_td_loss(model, target_model, batch_size, gamma, replay_buffer)")
         loss = compute_td_loss(model, target_model, batch_size, gamma, replay_buffer)
         optimizer.zero_grad()
         loss.backward()
@@ -82,8 +84,9 @@ for frame_idx in range(1, num_frames + 1):
     if frame_idx % 50000 == 0:
         target_model.copy_from(model)
 
-    if frame_idx % 100 == 0 and frame_idx > 10000:
+    if frame_idx % 1000 == 0 and frame_idx > 10000:
         torch.save(model.state_dict(), "save.pth")
+        np.save('loss', losses)
+        np.save('reward', all_rewards)
 
-np.save('loss', losses)
-np.save('reward', all_rewards)
+

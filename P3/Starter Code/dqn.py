@@ -72,6 +72,23 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
     # implement the loss function here
+    next_Q = model(next_state)
+    t_next_Q = []
+    current_Q = []
+    total_loss = 0.0
+    for i in range (batch_size):
+        current_Q.append(target_model.forward(state[i])[0][b_action[i]])
+        t_next_Q.append(next_Q[i][b_action[i]])
+    next_Q = t_next_Q   
+    target_value = []
+    loss = []
+    for i in range(batch_size):
+        target_value.append(b_reward[i] + gamma * next_Q[i])
+    for i in range(batch_size):
+        loss.append((current_Q[i] - target_value[i])**2)
+    for i in range (batch_size):
+        total_loss = total_loss + loss[i]
+    '''
     state_holder = b_next_state
     state_check = []
     state_status = []
@@ -95,6 +112,13 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     over = 0
     count = 0
     while (not over):
+        count = count + 1
+        print(count)
+        if (count > 20):
+            for y in range(len(state_status)):
+                if (state_status[y] == -1):
+                    target_value[y] = -1
+            break
         for i in range(len(replay_buffer)):             
             for j in range(len(state_holder)):
                 if (state_status[j] == -1):
@@ -135,7 +159,7 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     
     
     print(total_loss/batch_size)
-    
+    '''
     
     '''
     total_loss = 0.0
