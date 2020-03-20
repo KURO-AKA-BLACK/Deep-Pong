@@ -72,6 +72,21 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
     # implement the loss function here
+    
+    q_values = model(state)
+    q_values_next = model(Variable(torch.FloatTensor(np.float32(b_next_state))))
+    q_value = []
+    for i in range(batch_size):
+        q_value.append(q_values[i][action[i]])
+    q_value = Variable(torch.FloatTensor(q_value),requires_grad = True)
+    q_value_next = q_values_next.max(1)[0]
+    expected_q_value = reward + gamma * q_value_next * (1 - done)
+    #print(expected_q_value)
+    #print(q_value)
+    #print(type(Variable(expected_q_value.data)))
+    loss = (q_value - Variable(expected_q_value.data)).pow(2).mean()
+    print(loss)
+    '''
     next_Q = model(next_state)
     t_next_Q = []
     current_Q = []
@@ -85,10 +100,11 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     for i in range(batch_size):
         target_value.append(b_reward[i] + gamma * next_Q[i])
     for i in range(batch_size):
-        loss.append((current_Q[i] - target_value[i])**2)
+        loss.append(((current_Q[i] - target_value[i])**2)**0.5)
     for i in range (batch_size):
         total_loss = total_loss + loss[i]
-    '''
+    #print(total_loss/batch_size)
+
     state_holder = b_next_state
     state_check = []
     state_status = []
@@ -214,7 +230,7 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     for i in range(len(loss)):
         total_loss = total_loss + loss[i]
     '''
-    return total_loss/batch_size
+    return loss
 
 
 class ReplayBuffer(object):
@@ -229,6 +245,11 @@ class ReplayBuffer(object):
 
     def sample(self, batch_size):
         # TODO: Randomly sampling data with specific batch size from the buffer
+        state, action, reward, next_state, done = zip(*random.sample(self.buffer, batch_size))
+        return np.concatenate(state), action, reward, np.concatenate(next_state), done
+
+        
+        '''
         state, action, reward, next_state, done = [], [], [], [], []
         samples = random.sample(self.buffer, batch_size)
         for i in range(batch_size):
@@ -238,8 +259,12 @@ class ReplayBuffer(object):
             next_state.append(samples[i][3])
             done.append(samples[i][4])
         
-        
+        state = torch.FloatTensor(state)
+        action = torch.LongTensor(action)
+        reward = torch.FloatTensor(reward)
+        next_state = torch.FloatTensor(next_state)
+        done = torch.FloatTensor(done)
         return state, action, reward, next_state, done
-
+'''
     def __len__(self):
         return len(self.buffer)
